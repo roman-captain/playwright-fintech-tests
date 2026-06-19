@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fintech Wallet - New Payment</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    nav { display: flex; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
+    nav a { text-decoration: none; color: #4f46e5; font-weight: 500; }
+    input, select { display: block; width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    label { font-weight: 500; color: #374151; margin-top: 12px; display: block; }
+    button { width: 100%; padding: 12px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 8px; }
+    button:hover { background: #4338ca; }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
+    .error { color: #dc2626; margin-top: 10px; }
+    .success { color: #16a34a; margin-top: 10px; padding: 12px; background: #dcfce7; border-radius: 4px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/dashboard.html" data-testid="nav-dashboard">Dashboard</a>
+    <a href="/payment.html" data-testid="nav-payment">New Payment</a>
+    <a href="/history.html" data-testid="nav-history">Transaction History</a>
+    <a href="#" data-testid="nav-logout" id="logout-btn">Logout</a>
+  </nav>
+
+  <h1>New Payment</h1>
+
+  <div class="card">
+    <form id="payment-form" data-testid="payment-form">
+      <label>Amount</label>
+      <input
+        data-testid="amount-input"
+        name="amount"
+        type="number"
+        placeholder="0.00"
+        min="0.01"
+        step="0.01"
+        required
+      />
+
+      <label>Currency</label>
+      <select data-testid="currency-select" name="currency">
+        <option value="EUR">EUR</option>
+        <option value="USD">USD</option>
+        <option value="GBP">GBP</option>
+      </select>
+
+      <label>Recipient email</label>
+      <input
+        data-testid="recipient-input"
+        name="recipient"
+        type="email"
+        placeholder="recipient@example.com"
+        required
+      />
+
+      <button data-testid="submit-payment-btn" type="submit">Send Payment</button>
+    </form>
+
+    <p data-testid="payment-error" class="error" style="display:none"></p>
+    <div data-testid="payment-success" class="success" style="display:none">
+      <strong>Payment initiated</strong>
+      <p>Payment ID: <span data-testid="payment-id"></span></p>
+      <p>Status: <span data-testid="payment-status"></span></p>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    document.getElementById('logout-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    });
+
+    document.getElementById('payment-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const errorEl = document.querySelector('[data-testid="payment-error"]');
+      const successEl = document.querySelector('[data-testid="payment-success"]');
+      const btn = document.querySelector('[data-testid="submit-payment-btn"]');
+
+      errorEl.style.display = 'none';
+      successEl.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+
+      const amount = parseFloat(e.target.amount.value);
+      const currency = e.target.currency.value;
+      const recipient = e.target.recipient.value;
+
+      const res = await fetch('/api/v1/payments/initiate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ amount, currency, recipient }),
+      });
+
+      const data = await res.json();
+      btn.disabled = false;
+      btn.textContent = 'Send Payment';
+
+      if (res.ok) {
+        document.querySelector('[data-testid="payment-id"]').textContent = data.id;
+        document.querySelector('[data-testid="payment-status"]').textContent = data.status;
+        successEl.style.display = 'block';
+        e.target.reset();
+      } else {
+        errorEl.textContent = data.error || 'Payment failed';
+        errorEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

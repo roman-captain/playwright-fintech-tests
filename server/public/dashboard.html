@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fintech Wallet - Dashboard</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    nav { display: flex; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
+    nav a { text-decoration: none; color: #4f46e5; font-weight: 500; }
+    nav a:hover { text-decoration: underline; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin-bottom: 16px; }
+    .balance-amount { font-size: 36px; font-weight: bold; color: #1a1a2e; }
+    .currency { color: #6b7280; font-size: 18px; }
+    .kyc-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 500; }
+    .kyc-approved { background: #dcfce7; color: #16a34a; }
+    .kyc-pending { background: #fef9c3; color: #ca8a04; }
+    button { padding: 10px 20px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #4338ca; }
+    .logout { background: #6b7280; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/dashboard.html" data-testid="nav-dashboard">Dashboard</a>
+    <a href="/payment.html" data-testid="nav-payment">New Payment</a>
+    <a href="/history.html" data-testid="nav-history">Transaction History</a>
+    <a href="#" data-testid="nav-logout" id="logout-btn">Logout</a>
+  </nav>
+
+  <h1>Dashboard</h1>
+
+  <div class="card" data-testid="balance-card">
+    <p style="color:#6b7280; margin:0 0 8px">Available Balance</p>
+    <div>
+      <span data-testid="balance-amount" class="balance-amount">—</span>
+      <span data-testid="balance-currency" class="currency">EUR</span>
+    </div>
+    <p style="margin:8px 0 0; color:#6b7280; font-size:14px">
+      Spending limit: <span data-testid="spending-limit">—</span> EUR
+    </p>
+  </div>
+
+  <div class="card" data-testid="kyc-card">
+    <p style="color:#6b7280; margin:0 0 8px">KYC Status</p>
+    <span data-testid="kyc-status" class="kyc-badge">—</span>
+  </div>
+
+  <button onclick="window.location.href='/payment.html'" data-testid="make-payment-btn">
+    Make a Payment
+  </button>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    document.getElementById('logout-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    });
+
+    async function loadDashboard() {
+      const [balanceRes, kycRes] = await Promise.all([
+        fetch('/api/v1/account/balance', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/v1/account/kyc-status', { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+
+      if (balanceRes.status === 401) { localStorage.removeItem('token'); window.location.href = '/'; return; }
+
+      const balance = await balanceRes.json();
+      const kyc = await kycRes.json();
+
+      document.querySelector('[data-testid="balance-amount"]').textContent = balance.balance;
+      document.querySelector('[data-testid="balance-currency"]').textContent = balance.currency;
+      document.querySelector('[data-testid="spending-limit"]').textContent = balance.spending_limit;
+
+      const kycEl = document.querySelector('[data-testid="kyc-status"]');
+      kycEl.textContent = kyc.kyc_status;
+      kycEl.className = `kyc-badge kyc-${kyc.kyc_status}`;
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

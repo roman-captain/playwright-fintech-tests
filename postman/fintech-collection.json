@@ -1,0 +1,298 @@
+{
+  "info": {
+    "name": "Fintech Wallet API",
+    "description": "API contract collection for Fintech Wallet. Used for contract validation in CI and as living documentation for developers.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "token", "value": "" },
+    { "key": "paymentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register – new user",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('userId and kyc_status returned', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.userId).to.be.a('string');",
+            "  pm.expect(body.kyc_status).to.equal('pending');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\": \"newman-test@example.com\", \"password\": \"NewPass123!\"}" }
+          }
+        },
+        {
+          "name": "Login – valid credentials",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Token returned', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.token).to.be.a('string');",
+            "  pm.collectionVariables.set('token', body.token);",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\": \"user@test.com\", \"password\": \"Pass123!\"}" }
+          }
+        },
+        {
+          "name": "Login – invalid credentials",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 401', () => pm.response.to.have.status(401));",
+            "pm.test('No token', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.token).to.be.undefined;",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\": \"user@test.com\", \"password\": \"wrongpassword\"}" }
+          }
+        },
+        {
+          "name": "Admin Login",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Token returned', () => {",
+            "  pm.expect(pm.response.json().token).to.be.a('string');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\": \"admin@test.com\", \"password\": \"Admin123!\"}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments (REST)",
+      "item": [
+        {
+          "name": "Initiate payment",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('Payment id returned', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.id).to.be.a('string');",
+            "  pm.expect(body.status).to.equal('pending');",
+            "  pm.collectionVariables.set('paymentId', body.id);",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/payments/initiate",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"amount\": 50, \"currency\": \"EUR\", \"recipient\": \"vendor@example.com\"}" }
+          }
+        },
+        {
+          "name": "Get payment by ID",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Payment schema valid', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.have.property('id');",
+            "  pm.expect(body).to.have.property('amount');",
+            "  pm.expect(body).to.have.property('status');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/payments/pay-001",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Webhook – payment completed",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Webhook received', () => {",
+            "  pm.expect(pm.response.json().received).to.be.true;",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/webhooks/payment",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"payment_id\": \"pay-002\", \"status\": \"completed\", \"signature\": \"valid-sig\"}" }
+          }
+        },
+        {
+          "name": "Webhook – KYC approved",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('KYC status updated', () => {",
+            "  pm.expect(pm.response.json().kyc_status).to.equal('approved');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/webhooks/kyc",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"user_id\": \"user-kyc-test\", \"status\": \"approved\", \"signature\": \"valid-sig\"}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions (GraphQL)",
+      "item": [
+        {
+          "name": "Query transactions – all fields",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('GraphQL data returned', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.have.property('data');",
+            "  pm.expect(body.data.transactions).to.be.an('array');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/graphql",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"query\": \"{ transactions { id amount currency status created_at } }\"}" }
+          }
+        },
+        {
+          "name": "Query balance via GraphQL",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Balance data returned', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.data.balance).to.have.property('amount');",
+            "  pm.expect(body.data.balance).to.have.property('currency');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/graphql",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"query\": \"{ balance { amount currency } }\"}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Account",
+      "item": [
+        {
+          "name": "Get balance",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Balance schema valid', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.have.property('balance');",
+            "  pm.expect(body).to.have.property('currency');",
+            "  pm.expect(body).to.have.property('spending_limit');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/account/balance",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Get KYC status",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('KYC schema valid', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.have.property('kyc_status');",
+            "  pm.expect(body).to.have.property('can_transact');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/account/kyc-status",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get notifications list",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Notifications returned', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.data).to.be.an('array');",
+            "  pm.expect(body).to.have.property('total');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/notifications",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Get unread count",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Count is a number', () => {",
+            "  pm.expect(pm.response.json().count).to.be.a('number');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/notifications/unread/count",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth – Logout (last: invalidates token)",
+      "item": [
+        {
+          "name": "Logout",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Logout message returned', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.message).to.include('Logged out');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/logout",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

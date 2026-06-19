@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fintech Wallet - Transaction History</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
+    nav { display: flex; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
+    nav a { text-decoration: none; color: #4f46e5; font-weight: 500; }
+    .filters { display: flex; gap: 12px; margin-bottom: 20px; }
+    select, input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; }
+    button { padding: 8px 16px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px; background: #f9fafb; border-bottom: 2px solid #e5e7eb; color: #374151; }
+    td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
+    .status-completed { color: #16a34a; font-weight: 500; }
+    .status-pending { color: #ca8a04; font-weight: 500; }
+    .status-failed { color: #dc2626; font-weight: 500; }
+    .empty { text-align: center; padding: 40px; color: #6b7280; }
+    .export-btn { background: #059669; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/dashboard.html" data-testid="nav-dashboard">Dashboard</a>
+    <a href="/payment.html" data-testid="nav-payment">New Payment</a>
+    <a href="/history.html" data-testid="nav-history">Transaction History</a>
+    <a href="#" data-testid="nav-logout" id="logout-btn">Logout</a>
+  </nav>
+
+  <h1>Transaction History</h1>
+
+  <div class="filters">
+    <select data-testid="status-filter" id="status-filter">
+      <option value="">All statuses</option>
+      <option value="completed">Completed</option>
+      <option value="pending">Pending</option>
+      <option value="failed">Failed</option>
+    </select>
+
+    <button data-testid="apply-filter-btn" onclick="loadHistory()">Apply</button>
+    <button data-testid="export-csv-btn" class="export-btn" onclick="exportCSV()">Export CSV</button>
+  </div>
+
+  <table data-testid="transactions-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Amount</th>
+        <th>Recipient</th>
+        <th>Status</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody data-testid="transactions-body" id="transactions-body">
+      <tr><td colspan="5" class="empty">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <p data-testid="transactions-count" style="color:#6b7280; margin-top:12px; font-size:14px"></p>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    document.getElementById('logout-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    });
+
+    async function loadHistory() {
+      const status = document.getElementById('status-filter').value;
+      const params = status ? `?status=${status}` : '';
+
+      const res = await fetch(`/api/v1/transactions${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) { localStorage.removeItem('token'); window.location.href = '/'; return; }
+
+      const { data, total } = await res.json();
+      const tbody = document.getElementById('transactions-body');
+
+      document.querySelector('[data-testid="transactions-count"]').textContent =
+        `Showing ${data.length} of ${total} transactions`;
+
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">No transactions found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(tx => `
+        <tr data-testid="transaction-row" data-id="${tx.id}">
+          <td data-testid="tx-id">${tx.id}</td>
+          <td data-testid="tx-amount">${tx.amount} ${tx.currency}</td>
+          <td data-testid="tx-recipient">${tx.recipient}</td>
+          <td><span class="status-${tx.status}" data-testid="tx-status">${tx.status}</span></td>
+          <td data-testid="tx-date">${new Date(tx.created_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function exportCSV() {
+      const res = await fetch('/api/v1/transactions/export?format=csv', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'transactions.csv';
+      a.click();
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>

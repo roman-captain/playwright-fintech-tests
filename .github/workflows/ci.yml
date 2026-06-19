@@ -1,0 +1,247 @@
+name: Fintech Tests CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      run_type:
+        description: 'Run type'
+        required: false
+        default: 'full'
+        type: choice
+        options: [full, smoke, performance, security]
+
+jobs:
+
+  # ── PR: contracts + smoke ──────────────────────────────────────────────────
+  smoke:
+    name: Contracts + Smoke
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start mock server
+        run: npx ts-node server/server.ts &
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3001/api/v1/health --timeout 15000
+
+      - name: Validate API contracts (Newman)
+        run: npx newman run postman/fintech-collection.json
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke tests (@smoke)
+        run: npx playwright test --grep @smoke
+        env:
+          QASE_MODE: off
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-report
+          path: playwright-report/
+          retention-days: 3
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            { "text": "FAIL Smoke – PR #${{ github.event.number }} – ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ── main/nightly: full regression ─────────────────────────────────────────
+  regression:
+    name: Full Regression
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start mock server
+        run: npx ts-node server/server.ts &
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3001/api/v1/health --timeout 15000
+
+      - name: Validate API contracts (Newman)
+        run: npx newman run postman/fintech-collection.json
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run full test suite
+        run: npx playwright test
+        env:
+          QASE_TESTOPS_API_TOKEN: ${{ secrets.QASE_TESTOPS_API_TOKEN }}
+          QASE_MODE: ${{ github.ref == 'refs/heads/main' && 'testops' || 'off' }}
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regression-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            { "text": "FAIL Regression on ${{ github.ref_name }} – ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ── nightly only: performance ──────────────────────────────────────────────
+  performance:
+    name: Performance (k6)
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.run_type == 'performance')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install k6
+        run: |
+          curl https://github.com/grafana/k6/releases/download/v0.50.0/k6-v0.50.0-linux-amd64.tar.gz -L | tar xvz
+          sudo mv k6-v0.50.0-linux-amd64/k6 /usr/local/bin/
+
+      - name: Start mock server
+        run: npx ts-node server/server.ts &
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3001/api/v1/health --timeout 15000
+
+      - name: Run k6 payment load test
+        run: k6 run k6/payment-load.js
+        env:
+          BASE_URL: http://localhost:3001
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            { "text": "FAIL Performance (k6) on ${{ github.ref_name }} – ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ── manual or post-deploy: prod smoke (GET-only, no data creation) ───────
+  # Triggered manually by release owner after deployment confirmation,
+  # or called from deploy pipeline. Uses restricted read-only credentials.
+  prod-smoke:
+    name: Prod Smoke (read-only)
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_type == 'full'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run prod smoke (@prod-smoke, GET-only)
+        run: npx playwright test --grep @prod-smoke
+        env:
+          BASE_URL: ${{ secrets.PROD_BASE_URL }}
+          QASE_MODE: off
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prod-smoke-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            { "text": "FAIL Prod Smoke – ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ── pre-release manual: security scan ─────────────────────────────────────
+  security:
+    name: Security Scan (OWASP ZAP)
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_type == 'security'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start mock server
+        run: npx ts-node server/server.ts &
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3001/api/v1/health --timeout 15000
+
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.11.0
+        with:
+          target: 'http://localhost:3001'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report
+          path: report_html.html
+          retention-days: 30
