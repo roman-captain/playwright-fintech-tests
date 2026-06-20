@@ -5,7 +5,7 @@ import { qase } from 'playwright-qase-reporter';
 
 test.describe('Login page', () => {
 
-  test(qase(140, 'UI-01 – login form is visible', async ({ page }) => {
+  test(qase(140, 'UI-01 – login form is visible'), async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
 
@@ -14,7 +14,7 @@ test.describe('Login page', () => {
     await expect(loginPage.submitButton).toBeVisible();
   });
 
-  test(qase(141, 'UI-02 – valid login redirects to dashboard', async ({ page }) => {
+  test(qase(141, 'UI-02 – valid login redirects to dashboard'), async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.login('user@test.com', 'Pass123!');
@@ -22,7 +22,7 @@ test.describe('Login page', () => {
     await expect(page).toHaveURL('/dashboard.html');
   });
 
-  test(qase(142, 'UI-03 – invalid credentials shows error message', async ({ page }) => {
+  test(qase(142, 'UI-03 – invalid credentials shows error message'), async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.login('user@test.com', 'wrongpassword');
@@ -31,7 +31,7 @@ test.describe('Login page', () => {
     await expect(loginPage.errorMessage).toContainText('Invalid');
   });
 
-  test(qase(143, 'UI-04 – authenticated user is redirected from login to dashboard', async ({ page, authToken }) => {
+  test(qase(143, 'UI-04 – authenticated user is redirected from login to dashboard'), async ({ page, authToken }) => {
     await page.goto('/');
     await page.evaluate((t) => localStorage.setItem('token', t), authToken);
     await page.goto('/');
