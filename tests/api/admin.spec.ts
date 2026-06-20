@@ -18,7 +18,7 @@ async function getAdminToken(request: APIRequestContext) {
 
 // ─── SMOKE ────────────────────────────────────────────────────────────────────
 
-test(qase(65, 'TC-ADM-S-01 – admin login → 200 + role: admin @smoke @prod-smoke'), async ({ request }) => {
+test(qase(85, 'TC-ADM-S-01 – admin login → 200 + role: admin @smoke @prod-smoke'), async ({ request }) => {
   const res = await request.post(`${BASE_URL}/api/v1/auth/login`, {
     data: { email: 'admin@test.com', password: 'Admin123!' },
   });
@@ -32,7 +32,7 @@ test(qase(65, 'TC-ADM-S-01 – admin login → 200 + role: admin @smoke @prod-sm
   expect(payload.role).toBe('admin');
 });
 
-test(qase(66, 'TC-ADM-S-02 – admin view user balance → 200 @smoke @prod-smoke'), async ({ request }) => {
+test(qase(86, 'TC-ADM-S-02 – admin view user balance → 200 @smoke @prod-smoke'), async ({ request }) => {
   const token = await getAdminToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/users/user-abc-123/balance`, {
@@ -46,7 +46,7 @@ test(qase(66, 'TC-ADM-S-02 – admin view user balance → 200 @smoke @prod-smok
   expect(body.currency).toBe('EUR');
 });
 
-test(qase(67, 'TC-ADM-S-03 – regular user → admin endpoint → 403 @smoke @prod-smoke'), async ({ request }) => {
+test(qase(87, 'TC-ADM-S-03 – regular user → admin endpoint → 403 @smoke @prod-smoke'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/users`, {
@@ -56,7 +56,7 @@ test(qase(67, 'TC-ADM-S-03 – regular user → admin endpoint → 403 @smoke @p
   expect(res.status()).toBe(403);
 });
 
-test(qase(68, 'TC-ADM-S-04 – admin KYC queue loads → 200 @smoke @prod-smoke'), async ({ request }) => {
+test(qase(88, 'TC-ADM-S-04 – admin KYC queue loads → 200 @smoke @prod-smoke'), async ({ request }) => {
   const token = await getAdminToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/kyc/queue`, {
@@ -72,7 +72,7 @@ test(qase(68, 'TC-ADM-S-04 – admin KYC queue loads → 200 @smoke @prod-smoke'
 
 // ─── REGRESSION ───────────────────────────────────────────────────────────────
 
-test(qase(69, 'TC-ADM-R-01 – admin users list → 200 + all users returned'), async ({ request }) => {
+test(qase(89, 'TC-ADM-R-01 – admin users list → 200 + all users returned'), async ({ request }) => {
   const token = await getAdminToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/users`, {
@@ -86,12 +86,12 @@ test(qase(69, 'TC-ADM-R-01 – admin users list → 200 + all users returned'), 
   expect(body.total).toBeGreaterThanOrEqual(4);
 });
 
-test(qase(70, 'TC-ADM-R-02 – admin users list: no auth → 401'), async ({ request }) => {
+test(qase(90, 'TC-ADM-R-02 – admin users list: no auth → 401'), async ({ request }) => {
   const res = await request.get(`${BASE_URL}/api/v1/admin/users`);
   expect(res.status()).toBe(401);
 });
 
-test(qase(71, 'TC-ADM-R-03 – admin view balance: user not found → 404'), async ({ request }) => {
+test(qase(91, 'TC-ADM-R-03 – admin view balance: user not found → 404'), async ({ request }) => {
   const token = await getAdminToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/users/nonexistent-id/balance`, {
@@ -101,12 +101,12 @@ test(qase(71, 'TC-ADM-R-03 – admin view balance: user not found → 404'), asy
   expect(res.status()).toBe(404);
 });
 
-test(qase(72, 'TC-ADM-R-04 – admin view balance: no auth → 401'), async ({ request }) => {
+test(qase(92, 'TC-ADM-R-04 – admin view balance: no auth → 401'), async ({ request }) => {
   const res = await request.get(`${BASE_URL}/api/v1/admin/users/user-abc-123/balance`);
   expect(res.status()).toBe(401);
 });
 
-test(qase(73, 'TC-ADM-R-05 – KYC queue contains only pending users'), async ({ request }) => {
+test(qase(93, 'TC-ADM-R-05 – KYC queue contains only pending users'), async ({ request }) => {
   const token = await getAdminToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/kyc/queue`, {
@@ -119,12 +119,12 @@ test(qase(73, 'TC-ADM-R-05 – KYC queue contains only pending users'), async ({
   }
 });
 
-test(qase(74, 'TC-ADM-R-06 – KYC queue: no auth → 401'), async ({ request }) => {
+test(qase(94, 'TC-ADM-R-06 – KYC queue: no auth → 401'), async ({ request }) => {
   const res = await request.get(`${BASE_URL}/api/v1/admin/kyc/queue`);
   expect(res.status()).toBe(401);
 });
 
-test(qase(105, 'TC-ADM-R-07 – user list response does not expose passwords'), async ({ request }) => {
+test(qase(95, 'TC-ADM-R-07 – user list response does not expose passwords'), async ({ request }) => {
   const token = await getAdminToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/users`, {
@@ -137,7 +137,7 @@ test(qase(105, 'TC-ADM-R-07 – user list response does not expose passwords'), 
   }
 });
 
-test(qase(106, 'TC-ADM-R-08 – admin cannot initiate payment (not their role)'), async ({ request }) => {
+test(qase(96, 'TC-ADM-R-08 – admin cannot initiate payment (not their role)'), async ({ request }) => {
   const token = await getAdminToken(request);
 
   const res = await request.post(`${BASE_URL}/api/v1/payments/initiate`, {
@@ -148,7 +148,7 @@ test(qase(106, 'TC-ADM-R-08 – admin cannot initiate payment (not their role)')
   expect(res.status()).toBe(403);
 });
 
-test(qase(107, 'TC-ADM-R-09 – admin user balance shows correct userId'), async ({ request }) => {
+test(qase(97, 'TC-ADM-R-09 – admin user balance shows correct userId'), async ({ request }) => {
   const token = await getAdminToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/users/user-kyc-456/balance`, {

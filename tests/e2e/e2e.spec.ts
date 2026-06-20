@@ -14,7 +14,7 @@ async function getToken(request: APIRequestContext, email = 'user@test.com', pas
 
 // ─── AUTH FLOWS ───────────────────────────────────────────────────────────────
 
-test(qase(83, 'TC-E2E-01 – login → token → access protected endpoint @smoke'), async ({ request }) => {
+test(qase(106, 'TC-E2E-01 – login → token → access protected endpoint @smoke'), async ({ request }) => {
   const res = await request.post(`${BASE_URL}/api/v1/auth/login`, {
     data: { email: 'user@test.com', password: 'Pass123!' },
   });
@@ -28,7 +28,7 @@ test(qase(83, 'TC-E2E-01 – login → token → access protected endpoint @smok
   expect(protectedRes.status()).toBe(200);
 });
 
-test(qase(84, 'TC-E2E-02 – expired token → all protected endpoints reject'), async ({ request }) => {
+test(qase(107, 'TC-E2E-02 – expired token → all protected endpoints reject'), async ({ request }) => {
   const expiredRes = await request.get(`${BASE_URL}/api/v1/test/expired-token`);
   const { token } = await expiredRes.json();
 
@@ -45,7 +45,7 @@ test(qase(84, 'TC-E2E-02 – expired token → all protected endpoints reject'),
 
 // ─── PAYMENT FLOWS ───────────────────────────────────────────────────────────
 
-test(qase(85, 'TC-E2E-03 – full payment flow: login → initiate → webhook → balance decreased → tx in history @smoke'), async ({ request }) => {
+test(qase(108, 'TC-E2E-03 – full payment flow: login → initiate → webhook → balance decreased → tx in history @smoke'), async ({ request }) => {
   const token = await getToken(request);
 
   const balanceBefore = await request.get(`${BASE_URL}/api/v1/account/balance`, {
@@ -79,7 +79,7 @@ test(qase(85, 'TC-E2E-03 – full payment flow: login → initiate → webhook �
   expect(found).toBeDefined();
 });
 
-test(qase(86, 'TC-E2E-04 – KYC gate: pending user cannot initiate payment @smoke'), async ({ request }) => {
+test(qase(109, 'TC-E2E-04 – KYC gate: pending user cannot initiate payment @smoke'), async ({ request }) => {
   const token = await getToken(request, 'kyc-pending@test.com');
 
   const kycRes = await request.get(`${BASE_URL}/api/v1/account/kyc-status`, {
@@ -97,7 +97,7 @@ test(qase(86, 'TC-E2E-04 – KYC gate: pending user cannot initiate payment @smo
   expect(body.code).toBe('KYC_PENDING');
 });
 
-test(qase(87, 'TC-E2E-05 – insufficient funds: payment blocked, balance unchanged'), async ({ request }) => {
+test(qase(110, 'TC-E2E-05 – insufficient funds: payment blocked, balance unchanged'), async ({ request }) => {
   const token = await getToken(request);
 
   const balanceBefore = await request.get(`${BASE_URL}/api/v1/account/balance`, {
@@ -118,7 +118,7 @@ test(qase(87, 'TC-E2E-05 – insufficient funds: payment blocked, balance unchan
   expect(balanceEnd).toBe(balanceStart);
 });
 
-test(qase(88, 'TC-E2E-06 – spending limit exceeded: payment blocked'), async ({ request }) => {
+test(qase(111, 'TC-E2E-06 – spending limit exceeded: payment blocked'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.post(`${BASE_URL}/api/v1/payments/initiate`, {
@@ -131,7 +131,7 @@ test(qase(88, 'TC-E2E-06 – spending limit exceeded: payment blocked'), async (
   expect(body.code).toBe('LIMIT_EXCEEDED');
 });
 
-test(qase(89, 'TC-E2E-07 – idempotency: same key → same payment, no duplicate in history'), async ({ request }) => {
+test(qase(112, 'TC-E2E-07 – idempotency: same key → same payment, no duplicate in history'), async ({ request }) => {
   const token = await getToken(request);
   const key = `e2e-idem-${Date.now()}`;
   const payload = { amount: 30, currency: 'EUR', recipient: 'idem@example.com', idempotency_key: key };
@@ -162,7 +162,7 @@ test(qase(89, 'TC-E2E-07 – idempotency: same key → same payment, no duplicat
 
 // ─── SECURITY FLOWS ───────────────────────────────────────────────────────────
 
-test(qase(90, 'TC-E2E-08 – IDOR: user A cannot access user B payment or transaction'), async ({ request }) => {
+test(qase(113, 'TC-E2E-08 – IDOR: user A cannot access user B payment or transaction'), async ({ request }) => {
   const tokenA = await getToken(request, 'user@test.com');
 
   const paymentRes = await request.get(`${BASE_URL}/api/v1/payments/pay-b-001`, {
@@ -176,7 +176,7 @@ test(qase(90, 'TC-E2E-08 – IDOR: user A cannot access user B payment or transa
   expect(txRes.status()).toBe(403);
 });
 
-test(qase(91, 'TC-E2E-09 – regular user cannot access any admin endpoint'), async ({ request }) => {
+test(qase(114, 'TC-E2E-09 – regular user cannot access any admin endpoint'), async ({ request }) => {
   const token = await getToken(request);
 
   const [users, balance, kyc] = await Promise.all([
@@ -192,7 +192,7 @@ test(qase(91, 'TC-E2E-09 – regular user cannot access any admin endpoint'), as
 
 // ─── TRANSACTION HISTORY FLOWS ────────────────────────────────────────────────
 
-test(qase(92, 'TC-E2E-10 – payment appears in transaction history after initiation'), async ({ request }) => {
+test(qase(115, 'TC-E2E-10 – payment appears in transaction history after initiation'), async ({ request }) => {
   const token = await getToken(request);
 
   const payRes = await request.post(`${BASE_URL}/api/v1/payments/initiate`, {
@@ -210,7 +210,7 @@ test(qase(92, 'TC-E2E-10 – payment appears in transaction history after initia
   expect(found.amount).toBe(15);
 });
 
-test(qase(93, 'TC-E2E-11 – filter by status=completed returns only completed transactions'), async ({ request }) => {
+test(qase(116, 'TC-E2E-11 – filter by status=completed returns only completed transactions'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions?status=completed`, {
@@ -224,7 +224,7 @@ test(qase(93, 'TC-E2E-11 – filter by status=completed returns only completed t
   }
 });
 
-test(qase(94, 'TC-E2E-12 – CSV export contains all user transactions'), async ({ request }) => {
+test(qase(117, 'TC-E2E-12 – CSV export contains all user transactions'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions/export?format=csv`, {
@@ -242,7 +242,7 @@ test(qase(94, 'TC-E2E-12 – CSV export contains all user transactions'), async 
 
 // ─── ADMIN FLOWS ──────────────────────────────────────────────────────────────
 
-test(qase(95, 'TC-E2E-13 – admin login → sees all users in system'), async ({ request }) => {
+test(qase(118, 'TC-E2E-13 – admin login → sees all users in system'), async ({ request }) => {
   const token = await getToken(request, 'admin@test.com', 'Admin123!');
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/users`, {
@@ -257,7 +257,7 @@ test(qase(95, 'TC-E2E-13 – admin login → sees all users in system'), async (
   expect(emails).toContain('kyc-pending@test.com');
 });
 
-test(qase(96, 'TC-E2E-14 – admin views specific user balance'), async ({ request }) => {
+test(qase(119, 'TC-E2E-14 – admin views specific user balance'), async ({ request }) => {
   const token = await getToken(request, 'admin@test.com', 'Admin123!');
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/users/user-abc-123/balance`, {
@@ -270,7 +270,7 @@ test(qase(96, 'TC-E2E-14 – admin views specific user balance'), async ({ reque
   expect(typeof body.balance).toBe('number');
 });
 
-test(qase(97, 'TC-E2E-15 – admin sees KYC pending queue with pending users only'), async ({ request }) => {
+test(qase(120, 'TC-E2E-15 – admin sees KYC pending queue with pending users only'), async ({ request }) => {
   const token = await getToken(request, 'admin@test.com', 'Admin123!');
 
   const res = await request.get(`${BASE_URL}/api/v1/admin/kyc/queue`, {

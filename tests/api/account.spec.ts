@@ -14,7 +14,7 @@ async function getToken(request: APIRequestContext, email = 'user@test.com', pas
 
 // ─── SMOKE ────────────────────────────────────────────────────────────────────
 
-test(qase(75, 'TC-ACC-S-01 – get balance: valid token → 200 @smoke @prod-smoke'), async ({ request }) => {
+test(qase(98, 'TC-ACC-S-01 – get balance: valid token → 200 @smoke @prod-smoke'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/account/balance`, {
@@ -28,12 +28,12 @@ test(qase(75, 'TC-ACC-S-01 – get balance: valid token → 200 @smoke @prod-smo
   expect(body.currency).toBe('EUR');
 });
 
-test(qase(76, 'TC-ACC-S-02 – get balance: no auth → 401 @smoke @prod-smoke'), async ({ request }) => {
+test(qase(99, 'TC-ACC-S-02 – get balance: no auth → 401 @smoke @prod-smoke'), async ({ request }) => {
   const res = await request.get(`${BASE_URL}/api/v1/account/balance`);
   expect(res.status()).toBe(401);
 });
 
-test(qase(77, 'TC-ACC-S-03 – KYC status: approved user → can_transact: true @smoke @prod-smoke'), async ({ request }) => {
+test(qase(100, 'TC-ACC-S-03 – KYC status: approved user → can_transact: true @smoke @prod-smoke'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/account/kyc-status`, {
@@ -47,7 +47,7 @@ test(qase(77, 'TC-ACC-S-03 – KYC status: approved user → can_transact: true 
   expect(body.can_transact).toBe(true);
 });
 
-test(qase(78, 'TC-ACC-S-04 – KYC status: pending user → can_transact: false @smoke @prod-smoke'), async ({ request }) => {
+test(qase(101, 'TC-ACC-S-04 – KYC status: pending user → can_transact: false @smoke @prod-smoke'), async ({ request }) => {
   const token = await getToken(request, 'kyc-pending@test.com');
 
   const res = await request.get(`${BASE_URL}/api/v1/account/kyc-status`, {
@@ -63,7 +63,7 @@ test(qase(78, 'TC-ACC-S-04 – KYC status: pending user → can_transact: false 
 
 // ─── REGRESSION ───────────────────────────────────────────────────────────────
 
-test(qase(79, 'TC-ACC-R-01 – balance response schema: userId, balance, currency, spending_limit'), async ({ request }) => {
+test(qase(102, 'TC-ACC-R-01 – balance response schema: userId, balance, currency, spending_limit'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/account/balance`, {
@@ -77,7 +77,7 @@ test(qase(79, 'TC-ACC-R-01 – balance response schema: userId, balance, currenc
   expect(body).toHaveProperty('spending_limit');
 });
 
-test(qase(80, 'TC-ACC-R-02 – balance: expired token → 401'), async ({ request }) => {
+test(qase(103, 'TC-ACC-R-02 – balance: expired token → 401'), async ({ request }) => {
   const expiredRes = await request.get(`${BASE_URL}/api/v1/test/expired-token`);
   const { token } = await expiredRes.json();
 
@@ -88,7 +88,7 @@ test(qase(80, 'TC-ACC-R-02 – balance: expired token → 401'), async ({ reques
   expect(res.status()).toBe(401);
 });
 
-test(qase(81, 'TC-ACC-R-03 – kyc-status schema: userId, kyc_status, can_transact'), async ({ request }) => {
+test(qase(104, 'TC-ACC-R-03 – kyc-status schema: userId, kyc_status, can_transact'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/account/kyc-status`, {
@@ -101,7 +101,7 @@ test(qase(81, 'TC-ACC-R-03 – kyc-status schema: userId, kyc_status, can_transa
   expect(body).toHaveProperty('can_transact');
 });
 
-test(qase(82, 'TC-ACC-R-04 – kyc-status: no auth → 401'), async ({ request }) => {
+test(qase(105, 'TC-ACC-R-04 – kyc-status: no auth → 401'), async ({ request }) => {
   const res = await request.get(`${BASE_URL}/api/v1/account/kyc-status`);
   expect(res.status()).toBe(401);
 });

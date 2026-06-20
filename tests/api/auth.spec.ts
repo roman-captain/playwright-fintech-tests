@@ -90,7 +90,7 @@ test(qase(8, 'TC-AUTH-08 – expired token → 401'), async ({ request }) => {
   expect(res.status()).toBe(401);
 });
 
-test(qase(108, 'TC-AUTH-SEC-01 – SQL injection in email field → 401 not 500'), async ({ request }) => {
+test(qase(17, 'TC-AUTH-SEC-01 – SQL injection in email field → 401 not 500'), async ({ request }) => {
   const res = await request.post(`${BASE_URL}/api/v1/auth/login`, {
     data: { email: "' OR '1'='1", password: 'anything' },
   });
@@ -99,7 +99,7 @@ test(qase(108, 'TC-AUTH-SEC-01 – SQL injection in email field → 401 not 500'
   expect([400, 401, 422]).toContain(res.status());
 });
 
-test(qase(109, 'TC-AUTH-SEC-02 – tampered JWT role claim → 401'), async ({ request }) => {
+test(qase(18, 'TC-AUTH-SEC-02 – tampered JWT role claim → 401'), async ({ request }) => {
   const loginRes = await request.post(`${BASE_URL}/api/v1/auth/login`, {
     data: { email: 'user@test.com', password: 'Pass123!' },
   });

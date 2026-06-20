@@ -14,7 +14,7 @@ async function getToken(request: APIRequestContext, email = 'user@test.com') {
 
 // ─── SMOKE ────────────────────────────────────────────────────────────────────
 
-test(qase(40, 'TC-TRX-S-01 – GET /transactions: valid token → 200 + data array @smoke @prod-smoke'), async ({ request }) => {
+test(qase(57, 'TC-TRX-S-01 – GET /transactions: valid token → 200 + data array @smoke @prod-smoke'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions`, {
@@ -28,12 +28,12 @@ test(qase(40, 'TC-TRX-S-01 – GET /transactions: valid token → 200 + data arr
   expect(body).toHaveProperty('total');
 });
 
-test(qase(41, 'TC-TRX-S-02 – GET /transactions: no auth → 401 @smoke @prod-smoke'), async ({ request }) => {
+test(qase(58, 'TC-TRX-S-02 – GET /transactions: no auth → 401 @smoke @prod-smoke'), async ({ request }) => {
   const res = await request.get(`${BASE_URL}/api/v1/transactions`);
   expect(res.status()).toBe(401);
 });
 
-test(qase(42, 'TC-TRX-S-03 – GET /transactions/:id: own transaction → 200 @smoke'), async ({ request }) => {
+test(qase(59, 'TC-TRX-S-03 – GET /transactions/:id: own transaction → 200 @smoke'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions/pay-001`, {
@@ -46,12 +46,12 @@ test(qase(42, 'TC-TRX-S-03 – GET /transactions/:id: own transaction → 200 @s
   expect(body.id).toBe('pay-001');
 });
 
-test(qase(43, 'TC-TRX-S-04 – GET /transactions/:id: no auth → 401 @smoke @prod-smoke'), async ({ request }) => {
+test(qase(60, 'TC-TRX-S-04 – GET /transactions/:id: no auth → 401 @smoke @prod-smoke'), async ({ request }) => {
   const res = await request.get(`${BASE_URL}/api/v1/transactions/pay-001`);
   expect(res.status()).toBe(401);
 });
 
-test(qase(44, 'TC-TRX-S-05 – GET /transactions/export?format=csv → 200 CSV @smoke @prod-smoke'), async ({ request }) => {
+test(qase(61, 'TC-TRX-S-05 – GET /transactions/export?format=csv → 200 CSV @smoke @prod-smoke'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions/export?format=csv`, {
@@ -64,7 +64,7 @@ test(qase(44, 'TC-TRX-S-05 – GET /transactions/export?format=csv → 200 CSV @
 
 // ─── REGRESSION ───────────────────────────────────────────────────────────────
 
-test(qase(45, 'TC-TRX-R-01 – response schema: total, limit, offset, data present'), async ({ request }) => {
+test(qase(62, 'TC-TRX-R-01 – response schema: total, limit, offset, data present'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions`, {
@@ -78,7 +78,7 @@ test(qase(45, 'TC-TRX-R-01 – response schema: total, limit, offset, data prese
   expect(body).toHaveProperty('offset');
 });
 
-test(qase(46, 'TC-TRX-R-02 – pagination: limit=1 → 1 item returned'), async ({ request }) => {
+test(qase(63, 'TC-TRX-R-02 – pagination: limit=1 → 1 item returned'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions?limit=1`, {
@@ -90,7 +90,7 @@ test(qase(46, 'TC-TRX-R-02 – pagination: limit=1 → 1 item returned'), async 
   expect(body.limit).toBe(1);
 });
 
-test(qase(47, 'TC-TRX-R-03 – pagination: offset skips records'), async ({ request }) => {
+test(qase(64, 'TC-TRX-R-03 – pagination: offset skips records'), async ({ request }) => {
   const token = await getToken(request);
 
   const resAll = await request.get(`${BASE_URL}/api/v1/transactions`, {
@@ -108,7 +108,7 @@ test(qase(47, 'TC-TRX-R-03 – pagination: offset skips records'), async ({ requ
   }
 });
 
-test(qase(48, 'TC-TRX-R-04 – filter by status=completed → only completed returned'), async ({ request }) => {
+test(qase(65, 'TC-TRX-R-04 – filter by status=completed → only completed returned'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions?status=completed`, {
@@ -121,7 +121,7 @@ test(qase(48, 'TC-TRX-R-04 – filter by status=completed → only completed ret
   }
 });
 
-test(qase(49, 'TC-TRX-R-05 – filter by status=pending → only pending returned'), async ({ request }) => {
+test(qase(66, 'TC-TRX-R-05 – filter by status=pending → only pending returned'), async ({ request }) => {
   const token = await getToken(request);
 
   // initiate a new payment to get a pending one
@@ -140,7 +140,7 @@ test(qase(49, 'TC-TRX-R-05 – filter by status=pending → only pending returne
   }
 });
 
-test(qase(50, 'TC-TRX-R-06 – filter by currency=EUR → only EUR returned'), async ({ request }) => {
+test(qase(67, 'TC-TRX-R-06 – filter by currency=EUR → only EUR returned'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions?currency=EUR`, {
@@ -153,7 +153,7 @@ test(qase(50, 'TC-TRX-R-06 – filter by currency=EUR → only EUR returned'), a
   }
 });
 
-test(qase(51, 'TC-TRX-R-07 – filter by date range: from/to → results within range'), async ({ request }) => {
+test(qase(68, 'TC-TRX-R-07 – filter by date range: from/to → results within range'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(
@@ -168,7 +168,7 @@ test(qase(51, 'TC-TRX-R-07 – filter by date range: from/to → results within 
   }
 });
 
-test(qase(52, 'TC-TRX-R-08 – user sees only own transactions, not others'), async ({ request }) => {
+test(qase(69, 'TC-TRX-R-08 – user sees only own transactions, not others'), async ({ request }) => {
   const tokenA = await getToken(request, 'user@test.com');
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions`, {
@@ -182,7 +182,7 @@ test(qase(52, 'TC-TRX-R-08 – user sees only own transactions, not others'), as
   }
 });
 
-test(qase(53, 'TC-TRX-R-09 – IDOR: user A cannot access user B transaction → 403'), async ({ request }) => {
+test(qase(70, 'TC-TRX-R-09 – IDOR: user A cannot access user B transaction → 403'), async ({ request }) => {
   const tokenA = await getToken(request, 'user@test.com');
 
   // pay-b-001 belongs to user-b@test.com
@@ -193,7 +193,7 @@ test(qase(53, 'TC-TRX-R-09 – IDOR: user A cannot access user B transaction →
   expect(res.status()).toBe(403);
 });
 
-test(qase(54, 'TC-TRX-R-10 – transaction not found → 404'), async ({ request }) => {
+test(qase(71, 'TC-TRX-R-10 – transaction not found → 404'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions/nonexistent-tx`, {
@@ -203,7 +203,7 @@ test(qase(54, 'TC-TRX-R-10 – transaction not found → 404'), async ({ request
   expect(res.status()).toBe(404);
 });
 
-test(qase(55, 'TC-TRX-R-11 – transaction item schema: required fields present'), async ({ request }) => {
+test(qase(72, 'TC-TRX-R-11 – transaction item schema: required fields present'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions/pay-001`, {
@@ -219,7 +219,7 @@ test(qase(55, 'TC-TRX-R-11 – transaction item schema: required fields present'
   expect(body).toHaveProperty('created_at');
 });
 
-test(qase(56, 'TC-TRX-R-12 – export CSV: Content-Disposition header present'), async ({ request }) => {
+test(qase(73, 'TC-TRX-R-12 – export CSV: Content-Disposition header present'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions/export?format=csv`, {
@@ -229,7 +229,7 @@ test(qase(56, 'TC-TRX-R-12 – export CSV: Content-Disposition header present'),
   expect(res.headers()['content-disposition']).toContain('transactions.csv');
 });
 
-test(qase(57, 'TC-TRX-R-13 – export CSV: body contains header row'), async ({ request }) => {
+test(qase(74, 'TC-TRX-R-13 – export CSV: body contains header row'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions/export?format=csv`, {
@@ -240,7 +240,7 @@ test(qase(57, 'TC-TRX-R-13 – export CSV: body contains header row'), async ({ 
   expect(text).toContain('id,amount,currency');
 });
 
-test(qase(58, 'TC-TRX-R-14 – export PDF → 200 application/pdf'), async ({ request }) => {
+test(qase(75, 'TC-TRX-R-14 – export PDF → 200 application/pdf'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions/export?format=pdf`, {
@@ -251,7 +251,7 @@ test(qase(58, 'TC-TRX-R-14 – export PDF → 200 application/pdf'), async ({ re
   expect(res.headers()['content-type']).toContain('application/pdf');
 });
 
-test(qase(59, 'TC-TRX-R-15 – export: missing format → 422'), async ({ request }) => {
+test(qase(76, 'TC-TRX-R-15 – export: missing format → 422'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions/export`, {
@@ -261,7 +261,7 @@ test(qase(59, 'TC-TRX-R-15 – export: missing format → 422'), async ({ reques
   expect(res.status()).toBe(422);
 });
 
-test(qase(60, 'TC-TRX-R-16 – export: invalid format → 422'), async ({ request }) => {
+test(qase(77, 'TC-TRX-R-16 – export: invalid format → 422'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions/export?format=xlsx`, {
@@ -271,12 +271,12 @@ test(qase(60, 'TC-TRX-R-16 – export: invalid format → 422'), async ({ reques
   expect(res.status()).toBe(422);
 });
 
-test(qase(61, 'TC-TRX-R-17 – export: no auth → 401'), async ({ request }) => {
+test(qase(78, 'TC-TRX-R-17 – export: no auth → 401'), async ({ request }) => {
   const res = await request.get(`${BASE_URL}/api/v1/transactions/export?format=csv`);
   expect(res.status()).toBe(401);
 });
 
-test(qase(62, 'TC-TRX-R-18 – expired token → GET /transactions returns 401'), async ({ request }) => {
+test(qase(79, 'TC-TRX-R-18 – expired token → GET /transactions returns 401'), async ({ request }) => {
   const expiredRes = await request.get(`${BASE_URL}/api/v1/test/expired-token`);
   const { token } = await expiredRes.json();
 
@@ -287,7 +287,7 @@ test(qase(62, 'TC-TRX-R-18 – expired token → GET /transactions returns 401')
   expect(res.status()).toBe(401);
 });
 
-test(qase(63, 'TC-TRX-R-19 – expired token → GET /transactions/:id returns 401'), async ({ request }) => {
+test(qase(80, 'TC-TRX-R-19 – expired token → GET /transactions/:id returns 401'), async ({ request }) => {
   const expiredRes = await request.get(`${BASE_URL}/api/v1/test/expired-token`);
   const { token } = await expiredRes.json();
 
@@ -298,7 +298,7 @@ test(qase(63, 'TC-TRX-R-19 – expired token → GET /transactions/:id returns 4
   expect(res.status()).toBe(401);
 });
 
-test(qase(64, 'TC-TRX-R-20 – expired token → export returns 401'), async ({ request }) => {
+test(qase(81, 'TC-TRX-R-20 – expired token → export returns 401'), async ({ request }) => {
   const expiredRes = await request.get(`${BASE_URL}/api/v1/test/expired-token`);
   const { token } = await expiredRes.json();
 
@@ -309,7 +309,7 @@ test(qase(64, 'TC-TRX-R-20 – expired token → export returns 401'), async ({ 
   expect(res.status()).toBe(401);
 });
 
-test(qase(102, 'TC-TRX-R-21 – offset greater than total → empty data array'), async ({ request }) => {
+test(qase(82, 'TC-TRX-R-21 – offset greater than total → empty data array'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions?offset=9999`, {
@@ -322,7 +322,7 @@ test(qase(102, 'TC-TRX-R-21 – offset greater than total → empty data array')
   expect(body.total).toBeGreaterThanOrEqual(0);
 });
 
-test(qase(103, 'TC-TRX-R-22 – limit=0 → empty data array'), async ({ request }) => {
+test(qase(83, 'TC-TRX-R-22 – limit=0 → empty data array'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(`${BASE_URL}/api/v1/transactions?limit=0`, {
@@ -334,7 +334,7 @@ test(qase(103, 'TC-TRX-R-22 – limit=0 → empty data array'), async ({ request
   expect(body.data).toHaveLength(0);
 });
 
-test(qase(104, 'TC-TRX-R-23 – date range with no matching transactions → empty array'), async ({ request }) => {
+test(qase(84, 'TC-TRX-R-23 – date range with no matching transactions → empty array'), async ({ request }) => {
   const token = await getToken(request);
 
   const res = await request.get(
